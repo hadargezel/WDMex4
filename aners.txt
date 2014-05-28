@@ -1,0 +1,36 @@
+לזהות לינק'
+
+לעבור על הטקסט שלו
+לפצל ל2 אם יש פסיק
+צד אחד השם-למשל דיאנה
+צד שני-מכיל תואר כמו נסיך מלכה וכו
+
+(quenn/king)optional + firstname + number rome
+
+אם אין את הלוגיקה שרשמנו עד עכשיו, מסתכלים על המשפט בו מופיע הלינק:
+אם מופיע יחס משפחתי כמו נשוי בן וכו' + מילת תואר נסיך דוכסית אז שווה להכינס
+בכל מקרה-לבדוק אם יש ערך (הלינק לא מכיל not yet started)
+למשל:
+<a href="/w/index.php?title=Duke_of_Cambridge&amp;action=edit&amp;redlink=1" class="new" title="Duke of Cambridge (not yet started)">Duke of Cambridge</a>
+
+
+בכל הדף: 
+
+בדף עצמו לחפש כמה שיותר מופעים של המילים שרשמנו + אנשים\מילים שהוצאנו כבר (למשל אם מצאנו את דיאנה אז בצארלס לחפש דיאנה ויליאם וכו')
+
+
+עד איפה קוראים את העמוד: 
+
+או עד הtoc : 
+<div id="toc" class="toc">
+או עד שמתקבלת השורה של ההד ליין 
+
+
+
+שלבים: 
+1. extract first pargraph
+2. split according to '.' 
+3. find links in each sentence 
+4. filter links - according to critiria 
+5. create relations according to filter.
+6. go whole page content and get score 

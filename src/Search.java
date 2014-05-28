@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
@@ -222,24 +223,78 @@ public class Search
 
 	public void addLinksToQueueAndToPage(String content, Page p)
 	{
-		String pattern = "(href=\"(\\/wiki\\/.*?)\")";
-		Pattern pat = Pattern.compile(pattern);
-		Matcher m = pat.matcher(content);
-
-		while (m.find())
+		String firstP = extractFirstParagraph(content);
+		List <String>  sentences = generateSentencesFromParagraph(firstP);
+		List <String> links = new LinkedList<String>();
+		for(String sentence : sentences)
 		{
-			String url = "http://simple.wikipedia.org" + m.group(2);
-			if (url != null)
+			
+		}
+//		String pattern = "(href=\"(\\/wiki\\/.*?)\")";
+//		Pattern pat = Pattern.compile(pattern);
+//		Matcher m = pat.matcher(content);
+//
+//		while (m.find())
+//		{
+//			String url = "http://simple.wikipedia.org" + m.group(2);
+//			if (url != null)
+//			{
+//				p.links.add(url);
+//				if (!alreadyInQueue.contains(url))
+//				{
+//					
+//					this.crawlingQueue.add(url);
+//				}
+//			}
+//		}
+		
+		
+	}
+
+	private List <String> generateSentencesFromParagraph(String firstP) {
+		LinkedList<String> result = new LinkedList<String>();
+		for(String s : firstP.split("."))
+		{
+			if(s != "")
+				result.add(s);
+		}
+		return result;
+	}
+
+
+	private String extractFirstParagraph(String content) {
+		String toc = "<div id=\"toc\" class=\"toc\">";
+		String headline = "<span class=\"mw-headline\""; //alternative ending for the first paragraph.
+		String initialChunk;
+		String res="";
+		if(content.contains(toc))
+		{
+			initialChunk = content.split(toc)[0];
+		}
+		else
+		{
+			initialChunk = content.split(headline)[0];
+		}
+		
+		if(initialChunk != "")
+		{
+			int firstIndexOfPtag = initialChunk.indexOf("<p>");
+			if(firstIndexOfPtag == -1)
+				return "";//according to guidance links must be found in first paragraph.   
+			int lastIndexOfPtag = initialChunk.lastIndexOf("</p>", firstIndexOfPtag);//under the assumption that the html file is properly written and there must be a <p> opening tag.
+			String paragraphs = initialChunk.substring(firstIndexOfPtag,lastIndexOfPtag + "</p>".length());
+			for(String s : paragraphs.split("<p>"))
 			{
-				p.links.add(url);
-				if (!alreadyInQueue.contains(url))
+				if(s != "")
 				{
-					
-					this.crawlingQueue.add(url);
+					res+= s.substring(0, s.indexOf("</p>")) +"."; // the dot was added in order to make sure that each paragraph ends with a dot.
 				}
 			}
 		}
+		if(res == "") System.out.println("Empty split according to 2 cretiria");
+		return res;
 	}
+
 
 	public String fetchPage(String urlAddress)
 	{
@@ -281,8 +336,8 @@ public class Search
 
 	public static void main(String[] args)
 	{
-		Search s = new Search("http://simple.wikipedia.org/wiki/Albert_Einstein");
-		s.crawl(200); // crawl, stop crawling after 200 diff. urls (in addition to the start page)
+		Search s = new Search("http://simple.wikipedia.org/wiki/Prince_William,_Duke_of_Cambridge");
+		s.crawl(50); // crawl, stop crawling after 200 diff. urls (in addition to the start page)
 		s.printPagesToFile("urls.txt");
 		PageRank pr = new PageRank(s.linksGraph, 0.00005); // init PageRankAlgorithm obj. with the stopping cond. - epsilon = 0.00005
 		pr.findPR(); // calculate Page Ranks
