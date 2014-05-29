@@ -220,15 +220,37 @@ public class Search
 			}
 		}
 	}
-
+	
+	public List<String> extractLinksFromSentence(String sentence)
+	{
+		/*This function extract the links from each sentence and omits the empty links - links that lead to empty pages in wikipedia*/
+		String linkElementPattern = "(?i)<a([^>]+)>(.+?)</a>";
+		Pattern patt = Pattern.compile(linkElementPattern);
+		List <String> links = new LinkedList<String>();
+		Matcher m = patt.matcher(sentence);
+		
+		while (m.find())
+			if(!m.group(1).toLowerCase().contains("not yet started"))//check if not empty link
+				links.add(m.group(1));
+		return links;
+	}
+	
 	public void addLinksToQueueAndToPage(String content, Page p)
 	{
 		String firstP = extractFirstParagraph(content);
 		List <String>  sentences = generateSentencesFromParagraph(firstP);
-		List <String> links = new LinkedList<String>();
 		for(String sentence : sentences)
 		{
-			
+			List<String> links = extractLinksFromSentence(sentence);
+			LinksEvaluator eval = new LinksEvaluator(sentence);
+			for(String link : links)
+			{
+				if(eval.isWorthyLinkBased(link) || eval.getSentenceEvalResult())
+				{
+					//TODO:----last stopped here -----///
+				}
+			}
+
 		}
 //		String pattern = "(href=\"(\\/wiki\\/.*?)\")";
 //		Pattern pat = Pattern.compile(pattern);
