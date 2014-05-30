@@ -18,7 +18,7 @@ public class LinksEvaluator
 
 
 	private static final String[] FAMILY_TREE_RELATIONS = new String[] 
-			{ "son", "grandson", "married", "husband", "wife",  "daughter", "granddaughter", "grandfather"};
+			{ "son", "sons", "grandson", "grandsons", "married", "husband", "wife",  "daughter", "daughters", "granddaughter", "granddaughters", "grandfather", "grandmother"};
 	private static final Set<String> FAMILY_TREE_RELATIONS_SET = new HashSet<String>(Arrays.asList(FAMILY_TREE_RELATIONS));
 	
 	private static final String[] ROYAL_RANKS = new String[] 
@@ -51,11 +51,21 @@ public class LinksEvaluator
 		return false;
 	}
 	
-	public boolean getSentenceEvalResult() {
+	public boolean getSentenceEvalResult()
+	{
 		if(!isWorthyBySentenceEvaluated)
 		{
-			//TODO:compute and change this flag to true and set result accordingly;
+			Set<String> wordsInSentence = new HashSet<String> (Arrays.asList(this.sentence.split(" ")));
+			Set<String> wordsInSentenceClone = new HashSet<String>(wordsInSentence);
+			wordsInSentence.retainAll(ROYAL_RANKS_SET);
+			wordsInSentenceClone.retainAll(FAMILY_TREE_RELATIONS_SET);
+			
+			if ( (wordsInSentence.size() > 0) && (wordsInSentenceClone.size() > 0) )
+				this.isWorthyBySenteceEvaluationResult = true;
+			
+			this.isWorthyBySentenceEvaluated = true;
 		}
+		
 		return isWorthyBySenteceEvaluationResult;
 	}
 }

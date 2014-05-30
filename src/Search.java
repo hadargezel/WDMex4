@@ -9,6 +9,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -29,9 +30,9 @@ public class Search
 	private String startingURL;
 	private WebGraph linksGraph;
 	private InvertedIndex words;
-	private Queue<String> crawlingQueue = new LinkedList<String>();
-	private Set<String> alreadyInQueue = new TreeSet<String>();
-
+	private Queue<String> crawlingQueue;//why double init?! = new LinkedList<String>();
+	private Set<String> alreadyInQueue;//why double init?! = new TreeSet<String>();
+	private HashSet<Relation> royalRelationCandidates;
 
 	public Search(String startingURL)
 	{
@@ -40,6 +41,7 @@ public class Search
 		this.words = new InvertedIndex();
 		this.crawlingQueue = new LinkedList<String>();
 		this.alreadyInQueue = new TreeSet<String>();
+		this.royalRelationCandidates = new HashSet<Relation>();
 	}
 
 
@@ -207,13 +209,18 @@ public class Search
 				if (!content.isEmpty())
 				{
 					Page p = new Page(nextCrawlURL);
+					//old pos. this.linksGraph.addNewPage(p);
+					addLinksToQueueAndRoyalRelationCandidates(content, p);
+					
+					// evaluate II - the "entity" (page) itself - based its content (evaluate I - the decision to crawl on the link to this page)
+					
 					this.linksGraph.addNewPage(p);
-					addLinksToQueueAndToPage(content, p);
-
+					/*
 					PageWordsParser parser = new PageWordsParser(nextCrawlURL, content);
 					parser.extractWords();
 					parser.calculateScores();
 					parser.addWordsAndScoresToInvertedIndex(this.words);
+					*/
 				}
 				this.alreadyInQueue.add(nextCrawlURL);
 				counter++;
@@ -235,42 +242,49 @@ public class Search
 		return links;
 	}
 	
-	public void addLinksToQueueAndToPage(String content, Page p)
+	public String extractUrlFromLinkElement(String link)
+	{
+		String urlInHrefRegex = "\\s*(?i)href\\s*=\\s*(\"([^\"]*\")|'[^']*'|([^'\">\\s]+))";
+		Pattern urlPattern = Pattern.compile(urlInHrefRegex);
+		Matcher m = urlPattern.matcher(link);
+		
+		if (m.find())
+			return m.group(1);
+		
+		return "";
+	}
+	public void addLinksToQueueAndRoyalRelationCandidates(String content, Page p)
 	{
 		String firstP = extractFirstParagraph(content);
 		List <String>  sentences = generateSentencesFromParagraph(firstP);
+		
 		for(String sentence : sentences)
 		{
 			List<String> links = extractLinksFromSentence(sentence);
 			LinksEvaluator eval = new LinksEvaluator(sentence);
 			for(String link : links)
 			{
-				if(eval.isWorthyLinkBased(link) || eval.getSentenceEvalResult())
+				if (LinksEvaluator.isWorthyLinkBased(link) || eval.getSentenceEvalResult())
 				{
-					//TODO:----last stopped here -----///
+					// get the url from the whole link element
+					String url = this.extractUrlFromLinkElement(link);
+					
+					if (url != null)
+					{
+						// add to queue (if not already in it)
+						if (!alreadyInQueue.contains(url))
+						{
+							this.crawlingQueue.add(url);
+						}
+						
+						// (Page, Page(url)) is candidate for being royal relation
+						Relation candidate = new Relation(p, new Page(url));
+						// add it to the candidates set TODO: remember that currently it's possible for a candidate royal1, royal2 but we will not crawl on royal2 at the end
+						this.royalRelationCandidates.add(candidate);
+					}
 				}
 			}
-
 		}
-//		String pattern = "(href=\"(\\/wiki\\/.*?)\")";
-//		Pattern pat = Pattern.compile(pattern);
-//		Matcher m = pat.matcher(content);
-//
-//		while (m.find())
-//		{
-//			String url = "http://simple.wikipedia.org" + m.group(2);
-//			if (url != null)
-//			{
-//				p.links.add(url);
-//				if (!alreadyInQueue.contains(url))
-//				{
-//					
-//					this.crawlingQueue.add(url);
-//				}
-//			}
-//		}
-		
-		
 	}
 
 	private List <String> generateSentencesFromParagraph(String firstP) {
