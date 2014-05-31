@@ -33,15 +33,18 @@ public class Search
 	private Queue<String> crawlingQueue;//why double init?! = new LinkedList<String>();
 	private Set<String> alreadyInQueue;//why double init?! = new TreeSet<String>();
 	private HashSet<Relation> royalRelationCandidates;
-
+	private HashSet<Page> royalPages;
+	
+	
 	public Search(String startingURL)
 	{
 		this.startingURL = startingURL;
-		this.linksGraph = new WebGraph(new Page(this.startingURL));
-		this.words = new InvertedIndex();
+		//this.linksGraph = new WebGraph(new Page(this.startingURL));
+		//this.words = new InvertedIndex();
 		this.crawlingQueue = new LinkedList<String>();
 		this.alreadyInQueue = new TreeSet<String>();
 		this.royalRelationCandidates = new HashSet<Relation>();
+		this.royalPages = new HashSet<Page>();
 	}
 
 
@@ -209,12 +212,18 @@ public class Search
 				if (!content.isEmpty())
 				{
 					Page p = new Page(nextCrawlURL);
+					PageEvaluator PE = new PageEvaluator(content);
+					if(PE.pageEvaluation())
+					{
+						this.royalPages.add(p);
+						addLinksToQueueAndRoyalRelationCandidates(content, p);
+					}
 					//old pos. this.linksGraph.addNewPage(p);
-					addLinksToQueueAndRoyalRelationCandidates(content, p);
+					
 					
 					// evaluate II - the "entity" (page) itself - based its content (evaluate I - the decision to crawl on the link to this page)
 					
-					this.linksGraph.addNewPage(p);
+					//this.linksGraph.addNewPage(p);
 					/*
 					PageWordsParser parser = new PageWordsParser(nextCrawlURL, content);
 					parser.extractWords();
@@ -289,7 +298,7 @@ public class Search
 
 	private List <String> generateSentencesFromParagraph(String firstP) {
 		LinkedList<String> result = new LinkedList<String>();
-		for(String s : firstP.split("."))
+		for(String s : firstP.split("[.]"))
 		{
 			if(s != "")
 				result.add(s);
@@ -374,42 +383,55 @@ public class Search
 	{
 		Search s = new Search("http://simple.wikipedia.org/wiki/Prince_William,_Duke_of_Cambridge");
 		s.crawl(50); // crawl, stop crawling after 200 diff. urls (in addition to the start page)
-		s.printPagesToFile("urls.txt");
-		PageRank pr = new PageRank(s.linksGraph, 0.00005); // init PageRankAlgorithm obj. with the stopping cond. - epsilon = 0.00005
-		pr.findPR(); // calculate Page Ranks
-		pr.printTopKPageRanks("rank.txt", 5);
+		s.filterCandidates();
+		//s.printPagesToFile("urls.txt");
+		//PageRank pr = new PageRank(s.linksGraph, 0.00005); // init PageRankAlgorithm obj. with the stopping cond. - epsilon = 0.00005
+		//pr.findPR(); // calculate Page Ranks
+		//pr.printTopKPageRanks("rank.txt", 5);
 
-		String query = "";
-		Scanner scanner = new Scanner(System.in);
-		System.out.println("Enter keywords: ");
-		query = scanner.nextLine();
+		//String query = "";
+		//Scanner scanner = new Scanner(System.in);
+		//System.out.println("Enter keywords: ");
+		//query = scanner.nextLine();
 
-		while(!query.equals("exit"))
-		{
-			String[] queryWords = query.toLowerCase().split(" ");
+		//while(!query.equals("exit"))
+		//{
+			//String[] queryWords = query.toLowerCase().split(" ");
 			
-			ArrayList<LinkedHashMap<String, Double>> rankMaps = new ArrayList<LinkedHashMap<String, Double>>(queryWords.length);
-			rankMaps.add(pr.getUrlsWithRanksOrderbyRank()); //add PageRank, convention with the aggregation func: pageRank always the first list
+			//ArrayList<LinkedHashMap<String, Double>> rankMaps = new ArrayList<LinkedHashMap<String, Double>>(queryWords.length);
+			//rankMaps.add(pr.getUrlsWithRanksOrderbyRank()); //add PageRank, convention with the aggregation func: pageRank always the first list
 			
 			// for each word, add its rank list
-			for (String word : queryWords)
-			{
-				Word wordInDB = s.words.words.get(word);
-				LinkedHashMap<String, Double> rankListOfWord = (wordInDB != null) ? wordInDB.getPageToScoreMapOrderbyScore() : InvertedIndex.getEmptyPageToScoreMap();
-				rankMaps.add(rankListOfWord); 
-			}
+			//for (String word : queryWords)
+			//{
+				//Word wordInDB = s.words.words.get(word);
+				//LinkedHashMap<String, Double> rankListOfWord = (wordInDB != null) ? wordInDB.getPageToScoreMapOrderbyScore() : InvertedIndex.getEmptyPageToScoreMap();
+				//rankMaps.add(rankListOfWord); 
+			//}
 			
-			LinkedHashMap<String, Double> topUrlsWithScores = s.TA(rankMaps, 5); // compute top 5 results using Threshold Algorithm
-			printTAtopKresults(topUrlsWithScores, 5);
+			//LinkedHashMap<String, Double> topUrlsWithScores = s.TA(rankMaps, 5); // compute top 5 results using Threshold Algorithm
+			//printTAtopKresults(topUrlsWithScores, 5);
 			
-			System.out.println("Enter keywords: ");
-			query = scanner.nextLine();
-		}
+			//System.out.println("Enter keywords: ");
+			//query = scanner.nextLine();
+		//}
 		
-		scanner.close();
+		//scanner.close();
 	}
 
 
+	private void filterCandidates() 
+	{
+		Iterator<Relation> candidatesIter = royalRelationCandidates.iterator();
+		while(candidatesIter.hasNext())
+		{
+			Relation candidateRelation = candidatesIter.next();
+			if(!royalPages.contains(candidateRelation.x) || !royalPages.contains(candidateRelation.y))
+				candidatesIter.remove();
+		}
+	}
+
+/*
 	private static void printTAtopKresults(LinkedHashMap<String, Double> topUrlsWithScores, int k)
 	{
 		int count = 0;
@@ -440,5 +462,5 @@ public class Search
 		
 		
 	}
-
+*/
 }
