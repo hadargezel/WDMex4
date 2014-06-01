@@ -25,7 +25,7 @@ public class LinksEvaluator
 	private static final Set<String> FAMILY_TREE_RELATIONS_SET = new HashSet<String>(Arrays.asList(FAMILY_TREE_RELATIONS));
 	
 	private static final String[] ROYAL_RANKS = new String[] 
-			{ "prince", "princess", "king", "queen", "dutchess", "earl", "duke", "member of the royal family"};//of the united kingdom"
+			{ "prince", "princess", "king", "queen", "duchess", "earl", "duke", "member of the royal family"};
 	private static final Set<String> ROYAL_RANKS_SET = new HashSet<String>(Arrays.asList(ROYAL_RANKS));
 	
 	 

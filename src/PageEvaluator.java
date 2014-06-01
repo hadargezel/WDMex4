@@ -1,12 +1,9 @@
-import java.security.acl.LastOwnerException;
+
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -19,12 +16,8 @@ public class PageEvaluator {
 	
 	String content;
 	
-	private static final String[] FAMILY_TREE_RELATIONS = new String[] 
-			{ "son", "sons", "grandson", "grandsons", "married", "husband", "wife",  "daughter", "daughters", "granddaughter", "granddaughters", "grandfather", "grandmother"};
-	private static final Set<String> FAMILY_TREE_RELATIONS_SET = new HashSet<String>(Arrays.asList(FAMILY_TREE_RELATIONS));
-	
 	private static final String[] ROYAL_RANKS = new String[] 
-			{ "prince", "princess", "king", "queen", "dutchess", "earl", "duke", "member of the royal family"};//of the united kingdom"
+			{ "prince", "princess", "king", "queen", "duchess", "earl", "duke", "member of the royal family"};
 	private static final Set<String> ROYAL_RANKS_SET = new HashSet<String>(Arrays.asList(ROYAL_RANKS));
 	
 	private static final String [] COUNTIES_AND_CITIES_UK = new String[] {"edinburgh","cornwall","cambridge","wales","york","wessex","gloucester","kent"};
@@ -40,13 +33,13 @@ public class PageEvaluator {
 	
 	public boolean checkRoyalOccurrencesAndPercentage()
 	{
-		/*This function check if there are at least 10 occurrences of a specific royal rank and if at least 5% of the words
-		 * are royal ranks
+		/*This function check if there are at least 10 occurrences of a specific royal rank and if at least 2.5% of the words
+		 * are royal ranks.
+		 * For short wiki pages (700 words) since the royal static analysis doesn't match, we check that the
+		 * first sentence contains a "undoubted" phrase - "member of the british royal family"
 		 *  */
 		Document doc = Jsoup.parse(content);
 		
-		//String stripped = content.replaceAll("<.*?>", " "); 
-		//String stripped = doc.text().replaceAll("[(),.;:|-]", " ");
 		String pageTextOnly = doc.text();
 		String stripped = pageTextOnly.replaceAll("[^a-z]", " ");
 		String [] contentArray = stripped.split(" +",0);
@@ -64,11 +57,9 @@ public class PageEvaluator {
 					royalPassedTen = true;
 			}
 		}
-		/*TODO: continue debug from here*/
 		if(royalPassedTen && (( (double)totalRoyalCounter / (double)contentArray.length ) > 0.025))
 			return true;
 		
-		// too short wiki pages have problem with the statistics, so "true" if page too short but in the first sentence there's strong phrase
 		
 		if ( (contentArray.length <= 700) && (pageTextOnly.substring(0, pageTextOnly.indexOf(".")).contains("member of the british royal family")) )
 			return true;
@@ -126,14 +117,13 @@ public class PageEvaluator {
 		wordsCloneB.removeAll(wordsCloneA); //removing royal ranks from heading
 		wordsCloneB.removeAll(words); //removing locations
 		wordsCloneB.remove(RomanDigits);
-		// removing "meta" words TODO: different desc. for those words
+		// removing moderating words:
 		wordsCloneB.remove("of");
 		wordsCloneB.remove("the");
 		wordsCloneB.remove("");
 		
 		if (wordsCloneB.size() == 0)
 			return new AbstractMap.SimpleEntry<Boolean, String>(false,"");
-		
 		if((words.size() > 0) && (!RomanDigits.isEmpty() || wordsCloneA.size() > 0)) //Location + (Rank or Roman Digit)
 		{
 			return new AbstractMap.SimpleEntry<Boolean, String>(true,"");
@@ -142,16 +132,7 @@ public class PageEvaluator {
 		{
 			String value = "";
 			if(isHeading) //extracting "Name" from heading 
-			{
-				/*
-				wordsCloneB.removeAll(wordsCloneA); //removing royal ranks from heading
-				wordsCloneB.removeAll(words); //removing locations
-				wordsCloneB.remove("of");
-				wordsCloneB.remove(RomanDigits);
-				wordsCloneB.remove("");
-				*/
 				value = wordsCloneB.iterator().next();
-			}
 			return new	AbstractMap.SimpleEntry<Boolean, String>(false,value);
 		}
 
