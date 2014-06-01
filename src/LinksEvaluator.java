@@ -2,6 +2,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 
 public class LinksEvaluator
 {
@@ -55,7 +58,8 @@ public class LinksEvaluator
 	{
 		if(!isWorthyBySentenceEvaluated)
 		{
-			Set<String> wordsInSentence = new HashSet<String> (Arrays.asList(this.sentence.split(" ")));
+			String cleanStentence = Jsoup.parse(this.sentence.toLowerCase()).text().replaceAll("[^a-z]", " ");
+			Set<String> wordsInSentence = new HashSet<String> (Arrays.asList(cleanStentence.split(" ")));
 			Set<String> wordsInSentenceClone = new HashSet<String>(wordsInSentence);
 			wordsInSentence.retainAll(ROYAL_RANKS_SET);
 			wordsInSentenceClone.retainAll(FAMILY_TREE_RELATIONS_SET);

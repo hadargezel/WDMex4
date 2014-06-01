@@ -28,6 +28,11 @@ public class Page{
 			return super.equals(arg0);
 		}
 	}
+
+	@Override
+	public int hashCode() {
+		return URL.hashCode();
+	}
 	
 	
 }

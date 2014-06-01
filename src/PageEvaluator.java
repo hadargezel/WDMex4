@@ -3,6 +3,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,6 +11,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 public class PageEvaluator {
 	
@@ -39,8 +43,12 @@ public class PageEvaluator {
 		/*This function check if there are at least 10 occurrences of a specific royal rank and if at least 5% of the words
 		 * are royal ranks
 		 *  */
-		String stripped = content.replaceAll("<.*?>", " "); 
-		stripped = stripped.replaceAll("[(),.;:]", " ");
+		Document doc = Jsoup.parse(content);
+		
+		//String stripped = content.replaceAll("<.*?>", " "); 
+		//String stripped = doc.text().replaceAll("[(),.;:|-]", " ");
+		String pageTextOnly = doc.text();
+		String stripped = pageTextOnly.replaceAll("[^a-z]", " ");
 		String [] contentArray = stripped.split(" +",0);
 		int [] countRoyal = new int[ROYAL_RANKS.length];
 		boolean royalPassedTen = false;
@@ -57,8 +65,14 @@ public class PageEvaluator {
 			}
 		}
 		/*TODO: continue debug from here*/
-		if(royalPassedTen && (( (double)totalRoyalCounter / (double)contentArray.length ) > 0.05))
+		if(royalPassedTen && (( (double)totalRoyalCounter / (double)contentArray.length ) > 0.025))
 			return true;
+		
+		// too short wiki pages have problem with the statistics, so "true" if page too short but in the first sentence there's strong phrase
+		
+		if ( (contentArray.length <= 700) && (pageTextOnly.substring(0, pageTextOnly.indexOf(".")).contains("member of the british royal family")) )
+			return true;
+		
 		return false;
 	}
 	
@@ -70,8 +84,13 @@ public class PageEvaluator {
 		Map.Entry<Boolean, String> nameRankLocationHeading = checkTextForNameRankLocation(heading,true); 
 		if(nameRankLocationHeading.getKey())
 			return true;
+		else if (nameRankLocationHeading.getValue().isEmpty()) // heading is for example "queen", "prince of wales" etc. (there isn't any word that can be candidate as "name" of person)
+			return false;
+		
 		String name = nameRankLocationHeading.getValue();
-		for(String sentence: content.split("[.]"))
+		Document doc = Jsoup.parse(content);
+		String textOnly = doc.text();
+		for(String sentence: textOnly.split("[.]"))
 			if(!sentence.isEmpty() && sentence.contains(name) && checkTextForNameRankLocation(sentence).getKey())
 				return true;
 		return false;
@@ -103,6 +122,18 @@ public class PageEvaluator {
 				break;
 			} 
 		}
+		
+		wordsCloneB.removeAll(wordsCloneA); //removing royal ranks from heading
+		wordsCloneB.removeAll(words); //removing locations
+		wordsCloneB.remove(RomanDigits);
+		// removing "meta" words TODO: different desc. for those words
+		wordsCloneB.remove("of");
+		wordsCloneB.remove("the");
+		wordsCloneB.remove("");
+		
+		if (wordsCloneB.size() == 0)
+			return new AbstractMap.SimpleEntry<Boolean, String>(false,"");
+		
 		if((words.size() > 0) && (!RomanDigits.isEmpty() || wordsCloneA.size() > 0)) //Location + (Rank or Roman Digit)
 		{
 			return new AbstractMap.SimpleEntry<Boolean, String>(true,"");
@@ -112,11 +143,13 @@ public class PageEvaluator {
 			String value = "";
 			if(isHeading) //extracting "Name" from heading 
 			{
+				/*
 				wordsCloneB.removeAll(wordsCloneA); //removing royal ranks from heading
 				wordsCloneB.removeAll(words); //removing locations
 				wordsCloneB.remove("of");
 				wordsCloneB.remove(RomanDigits);
 				wordsCloneB.remove("");
+				*/
 				value = wordsCloneB.iterator().next();
 			}
 			return new	AbstractMap.SimpleEntry<Boolean, String>(false,value);
@@ -133,9 +166,9 @@ public class PageEvaluator {
 		String s = "";
 		while (m.find())
 		{
-			s = m.group(1);
-			if(s.contains("firstheading"))//check if first heading
+			if(m.group(1).contains("firstheading"))//check if first heading
 			{
+				s = m.group(2);
 				s = s.substring(0,s.lastIndexOf("</span>"));
 				s = s.substring(s.lastIndexOf(">")+1);
 			}
